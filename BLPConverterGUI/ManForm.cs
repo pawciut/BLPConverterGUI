@@ -20,7 +20,10 @@ namespace BLPConverterGUI
         /// </summary>
         const string BLPConverter_DoneSuffix = "...done!";
         const string Status_Converting = "Converting...";
+        const string Status_Finished = "Complete";
+
         FolderBrowserDialog sourceFolderBrowserDialog;
+        FolderBrowserDialog outputFolderBrowserDialog;
         bool customOutputToggleVisible;
         int currentProgressCount = 0;
         Control control;
@@ -37,6 +40,8 @@ namespace BLPConverterGUI
             //initial source directory
             sourceFolderBrowserDialog = new FolderBrowserDialog();
             sourceFolderBrowserDialog.SelectedPath = @"C:\Repos\WOW2D\Tools\cascview_en\x64\Work";
+
+            outputFolderBrowserDialog = new FolderBrowserDialog();
 
             lbConvertingStatus.Text = String.Empty;
             lbConvertingCount.Text = String.Empty;
@@ -169,35 +174,49 @@ namespace BLPConverterGUI
         {
             if (IsSettingsValid())
             {
+                SetupProgess(lvSources.Items.Count);
+                ToggleProgressBar(true);
+                UpdateUI(false);
+
+                var sources = lvSources.Items.Cast<ListViewItem>().Select(lvi => lvi.Text).ToList();
+                List<string> outputs = new List<string>();
+
                 if (customOutputToggleVisible)
                 {
                     //Convert all to specified directory
-                    //TODO
+                    UpdateProgress("Preparing output paths");
+                    foreach(var sourcePath in sources)
+                    {
+                        var outputFileName = Path.ChangeExtension(Path.GetFileName(sourcePath), "png");
+                        var outputPath = Path.Combine(txtOutputPath.Text, outputFileName);
+                        outputs.Add(outputPath);
+                    }
                 }
                 else
                 {
-                    SetupProgess(lvSources.Items.Count);
-                    ToggleProgressBar(true);
-                    UpdateProgress(Status_Converting);
-                    UpdateUI(false);
-
-                    var sources = lvSources.Items.Cast<ListViewItem>().Select(lvi => lvi.Text).ToList();
-                    await ConvertAll(sources);
-
-                    UpdateUI(true);
-                    MessageBox.Show("Complete", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //by default, empty outputs means same location as source with appropriate file extension
                 }
+
+                UpdateProgress(Status_Converting);
+
+                await ConvertAll(sources, outputs);
+
+                UpdateProgress(Status_Finished);
+                UpdateUI(true);
+                MessageBox.Show("Complete", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
-        async Task ConvertAll(List<string> sources)
+        async Task ConvertAll(List<string> sources, List<string> outputs)
         {
             List<Task> allTasks = new List<Task>();
             //Convert all in same directory as source
             for (int i = 0; i < sources.Count; ++i)
             {
                 var sourcePath = sources[i];
-                var result = Task.Run<ConversionResult>(() => Convert(sourcePath, customOutputToggleVisible ? "TODO" : String.Empty));
+                //If there are no outputs that means that the default output file will be put in the same location as source
+                var outputPath = outputs.Any() ? outputs[i] : String.Empty;
+                var result = Task.Run<ConversionResult>(() => Convert(sourcePath, outputPath));
                 allTasks.Add(result);
             }
             await Task.WhenAll(allTasks);
@@ -251,15 +270,15 @@ namespace BLPConverterGUI
         {
             ConversionResult result = new ConversionResult();
             result.sourcePath = filePath;
-            if (String.IsNullOrEmpty(outputFilePath))
-                result.outputPath = filePath.Replace(".blp", ".png");
+
+            var arguments = String.IsNullOrEmpty(outputFilePath)? $"{filePath}" : $"\"{filePath}\" \"{outputFilePath}\"";
 
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = txtBLPConverterPath.Text,
-                    Arguments = $"{filePath}",
+                    Arguments = arguments,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
@@ -311,6 +330,23 @@ namespace BLPConverterGUI
             lbConvertingStatus.Visible = visible;
             lbConvertingCount.Visible = visible;
             progressBar1.Visible = visible;
+        }
+
+        private void btnOutputPathBrowser_Click(object sender, EventArgs e)
+        {
+            // Show the FolderBrowserDialog.
+            string folderPath = string.Empty;
+
+            if (outputFolderBrowserDialog == null)
+                outputFolderBrowserDialog = new FolderBrowserDialog();
+
+
+            if (outputFolderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+                //Get the path of specified file
+                folderPath = outputFolderBrowserDialog.SelectedPath;
+                txtOutputPath.Text = folderPath;
+            }
         }
     }
 }
