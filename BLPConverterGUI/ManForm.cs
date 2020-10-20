@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -22,10 +23,14 @@ namespace BLPConverterGUI
         FolderBrowserDialog sourceFolderBrowserDialog;
         bool customOutputToggleVisible;
         int currentProgressCount = 0;
+        Control control;
+        List<string> errors = new List<string>();
 
         public ManForm()
         {
             InitializeComponent();
+
+            control = this;
 
             //Defaults
             txtBLPConverterPath.Text = @"C:\Repos\WOW2D\Tools\BLPConverter_8-4\BLPConverter.exe";
@@ -160,13 +165,14 @@ namespace BLPConverterGUI
             ToggleCustomOutput(customOutputToggleVisible = !customOutputToggleVisible);
         }
 
-        private void btnConvert_Click(object sender, EventArgs e)
+        private async void btnConvert_Click(object sender, EventArgs e)
         {
             if (IsSettingsValid())
             {
                 if (customOutputToggleVisible)
                 {
                     //Convert all to specified directory
+                    //TODO
                 }
                 else
                 {
@@ -174,22 +180,40 @@ namespace BLPConverterGUI
                     ToggleProgressBar(true);
                     UpdateProgress(Status_Converting);
                     UpdateUI(false);
-                    //Convert all in same directory as source
-                    for(int i=0; i<lvSources.Items.Count;++i)
-                    {
-                        var results = Convert(lvSources.Items[i].Text, customOutputToggleVisible ? "TODO" : String.Empty);
-                    }
+
+                    var sources = lvSources.Items.Cast<ListViewItem>().Select(lvi => lvi.Text).ToList();
+                    await ConvertAll(sources);
+
                     UpdateUI(true);
                     MessageBox.Show("Complete", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
 
+        async Task ConvertAll(List<string> sources)
+        {
+            List<Task> allTasks = new List<Task>();
+            //Convert all in same directory as source
+            for (int i = 0; i < sources.Count; ++i)
+            {
+                var sourcePath = sources[i];
+                var result = Task.Run<ConversionResult>(() => Convert(sourcePath, customOutputToggleVisible ? "TODO" : String.Empty));
+                allTasks.Add(result);
+            }
+            await Task.WhenAll(allTasks);
+        }
+
+
+
         private void SetupProgess(int count)
         {
             currentProgressCount = 0;
             lbConvertingStatus.Text = null;
             lbConvertingCount.Text = $"{currentProgressCount}/{count}";
+
+            progressBar1.Value = 0;
+            progressBar1.Step = 1;
+            progressBar1.Maximum = count;
         }
 
         void UpdateProgress(string statusText)
@@ -202,9 +226,10 @@ namespace BLPConverterGUI
             {
                 ++currentProgressCount;
                 lbConvertingCount.Text = $"{currentProgressCount}/{lvSources.Items.Count}";
+                progressBar1.PerformStep();
             }
         }
-        
+
         void UpdateUI(bool enabled)
         {
             btnSelectSourceFile.Enabled = enabled;
@@ -216,11 +241,17 @@ namespace BLPConverterGUI
             chbCustomOutput.Enabled = enabled;
         }
 
+        Task<ConversionResult> ConvertAsync(string filePath, string outputFilePath)
+        {
+            var result = Task.Run<ConversionResult>(() => Convert(filePath, outputFilePath));
+            return result;
+        }
+
         ConversionResult Convert(string filePath, string outputFilePath)
         {
             ConversionResult result = new ConversionResult();
             result.sourcePath = filePath;
-            if(String.IsNullOrEmpty(outputFilePath))
+            if (String.IsNullOrEmpty(outputFilePath))
                 result.outputPath = filePath.Replace(".blp", ".png");
 
             var proc = new Process
@@ -238,13 +269,19 @@ namespace BLPConverterGUI
             while (!proc.StandardOutput.EndOfStream)
             {
                 string line = proc.StandardOutput.ReadLine();
-                // do something with line
+                //analize output of BLP Converter
                 if (line.EndsWith(BLPConverter_DoneSuffix))
                 {
                     result.success = true;
                     break;
                 }
             }
+            //For debugging purposue
+            //Thread.Sleep(2000);
+            control.BeginInvoke((MethodInvoker)delegate ()
+            {
+                UpdateProgress(result.success);
+            });
             return result;
         }
 
