@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -13,7 +14,14 @@ namespace BLPConverterGUI
 {
     public partial class ManForm : Form
     {
+        /// <summary>
+        /// suffix to search output from BLPConverter process to determin result of conversion
+        /// </summary>
+        const string BLPConverter_DoneSuffix = "...done!";
+        const string Status_Converting = "Converting...";
         FolderBrowserDialog sourceFolderBrowserDialog;
+        bool customOutputToggleVisible;
+        int currentProgressCount = 0;
 
         public ManForm()
         {
@@ -27,6 +35,11 @@ namespace BLPConverterGUI
 
             lbConvertingStatus.Text = String.Empty;
             lbConvertingCount.Text = String.Empty;
+
+            lbSourcesCount.Text = String.Empty;
+
+            ToggleProgressBar(false);
+            ToggleCustomOutput(false);
         }
 
         private void btnBLTConverterPathBrowse_Click(object sender, EventArgs e)
@@ -131,7 +144,136 @@ namespace BLPConverterGUI
             {
                 var item = new ListViewItem(filePath);
                 lvSources.Items.Add(item);
+                lbSourcesCount.Text = lvSources.Items.Count.ToString();
             }
+        }
+
+        void ToggleCustomOutput(bool visible)
+        {
+            lbOutput.Visible = visible;
+            txtOutputPath.Visible = visible;
+            btnOutputPathBrowser.Visible = visible;
+        }
+
+        private void chbCustomOutput_CheckedChanged(object sender, EventArgs e)
+        {
+            ToggleCustomOutput(customOutputToggleVisible = !customOutputToggleVisible);
+        }
+
+        private void btnConvert_Click(object sender, EventArgs e)
+        {
+            if (IsSettingsValid())
+            {
+                if (customOutputToggleVisible)
+                {
+                    //Convert all to specified directory
+                }
+                else
+                {
+                    SetupProgess(lvSources.Items.Count);
+                    ToggleProgressBar(true);
+                    UpdateProgress(Status_Converting);
+                    UpdateUI(false);
+                    //Convert all in same directory as source
+                    for(int i=0; i<lvSources.Items.Count;++i)
+                    {
+                        var results = Convert(lvSources.Items[i].Text, customOutputToggleVisible ? "TODO" : String.Empty);
+                    }
+                    UpdateUI(true);
+                    MessageBox.Show("Complete", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void SetupProgess(int count)
+        {
+            currentProgressCount = 0;
+            lbConvertingStatus.Text = null;
+            lbConvertingCount.Text = $"{currentProgressCount}/{count}";
+        }
+
+        void UpdateProgress(string statusText)
+        {
+            lbConvertingStatus.Text = statusText;
+        }
+        void UpdateProgress(bool success)
+        {
+            if (success)
+            {
+                ++currentProgressCount;
+                lbConvertingCount.Text = $"{currentProgressCount}/{lvSources.Items.Count}";
+            }
+        }
+        
+        void UpdateUI(bool enabled)
+        {
+            btnSelectSourceFile.Enabled = enabled;
+            btnSelectSourceFolder.Enabled = enabled;
+            btnClearSources.Enabled = enabled;
+            btnConvert.Enabled = enabled;
+            btnBLTConverterPathBrowse.Enabled = enabled;
+            btnOutputPathBrowser.Enabled = enabled;
+            chbCustomOutput.Enabled = enabled;
+        }
+
+        ConversionResult Convert(string filePath, string outputFilePath)
+        {
+            ConversionResult result = new ConversionResult();
+            result.sourcePath = filePath;
+            if(String.IsNullOrEmpty(outputFilePath))
+                result.outputPath = filePath.Replace(".blp", ".png");
+
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = txtBLPConverterPath.Text,
+                    Arguments = $"{filePath}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            while (!proc.StandardOutput.EndOfStream)
+            {
+                string line = proc.StandardOutput.ReadLine();
+                // do something with line
+                if (line.EndsWith(BLPConverter_DoneSuffix))
+                {
+                    result.success = true;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        bool IsSettingsValid()
+        {
+            if (!File.Exists(txtBLPConverterPath.Text))
+            {
+                MessageBox.Show("BLPConverter path is invalid", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            if (lvSources.Items.Count <= 0)
+            {
+                MessageBox.Show("No source files to convert", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            if (customOutputToggleVisible && !Directory.Exists(txtOutputPath.Text))
+            {
+                MessageBox.Show("Output path is invalid", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        void ToggleProgressBar(bool visible)
+        {
+            lbConvertingStatus.Visible = visible;
+            lbConvertingCount.Visible = visible;
+            progressBar1.Visible = visible;
         }
     }
 }

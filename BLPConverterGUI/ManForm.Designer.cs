@@ -40,6 +40,12 @@
             this.lbConvertingStatus = new System.Windows.Forms.Label();
             this.lbConvertingCount = new System.Windows.Forms.Label();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.btnConvert = new System.Windows.Forms.Button();
+            this.btnOutputPathBrowser = new System.Windows.Forms.Button();
+            this.txtOutputPath = new System.Windows.Forms.TextBox();
+            this.lbOutput = new System.Windows.Forms.Label();
+            this.chbCustomOutput = new System.Windows.Forms.CheckBox();
+            this.lbSourcesCount = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lbBLPPath
@@ -73,7 +79,7 @@
             // lbSource
             // 
             this.lbSource.AutoSize = true;
-            this.lbSource.Location = new System.Drawing.Point(13, 107);
+            this.lbSource.Location = new System.Drawing.Point(12, 184);
             this.lbSource.Name = "lbSource";
             this.lbSource.Size = new System.Drawing.Size(49, 13);
             this.lbSource.TabIndex = 3;
@@ -87,16 +93,16 @@
             this.lvSources.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1});
             this.lvSources.HideSelection = false;
-            this.lvSources.Location = new System.Drawing.Point(12, 131);
+            this.lvSources.Location = new System.Drawing.Point(12, 208);
             this.lvSources.Name = "lvSources";
-            this.lvSources.Size = new System.Drawing.Size(733, 310);
+            this.lvSources.Size = new System.Drawing.Size(727, 306);
             this.lvSources.TabIndex = 4;
             this.lvSources.UseCompatibleStateImageBehavior = false;
             this.lvSources.View = System.Windows.Forms.View.Details;
             // 
             // btnSelectSourceFolder
             // 
-            this.btnSelectSourceFolder.Location = new System.Drawing.Point(68, 102);
+            this.btnSelectSourceFolder.Location = new System.Drawing.Point(67, 179);
             this.btnSelectSourceFolder.Name = "btnSelectSourceFolder";
             this.btnSelectSourceFolder.Size = new System.Drawing.Size(75, 23);
             this.btnSelectSourceFolder.TabIndex = 5;
@@ -106,7 +112,7 @@
             // 
             // btnSelectSourceFile
             // 
-            this.btnSelectSourceFile.Location = new System.Drawing.Point(149, 102);
+            this.btnSelectSourceFile.Location = new System.Drawing.Point(148, 179);
             this.btnSelectSourceFile.Name = "btnSelectSourceFile";
             this.btnSelectSourceFile.Size = new System.Drawing.Size(75, 23);
             this.btnSelectSourceFile.TabIndex = 6;
@@ -116,7 +122,7 @@
             // 
             // btnClearSources
             // 
-            this.btnClearSources.Location = new System.Drawing.Point(230, 102);
+            this.btnClearSources.Location = new System.Drawing.Point(229, 179);
             this.btnClearSources.Name = "btnClearSources";
             this.btnClearSources.Size = new System.Drawing.Size(62, 23);
             this.btnClearSources.TabIndex = 7;
@@ -154,11 +160,74 @@
             this.columnHeader1.Text = "File";
             this.columnHeader1.Width = 400;
             // 
+            // btnConvert
+            // 
+            this.btnConvert.Location = new System.Drawing.Point(669, 174);
+            this.btnConvert.Name = "btnConvert";
+            this.btnConvert.Size = new System.Drawing.Size(75, 23);
+            this.btnConvert.TabIndex = 11;
+            this.btnConvert.Text = "Convert";
+            this.btnConvert.UseVisualStyleBackColor = true;
+            this.btnConvert.Click += new System.EventHandler(this.btnConvert_Click);
+            // 
+            // btnOutputPathBrowser
+            // 
+            this.btnOutputPathBrowser.Location = new System.Drawing.Point(716, 131);
+            this.btnOutputPathBrowser.Name = "btnOutputPathBrowser";
+            this.btnOutputPathBrowser.Size = new System.Drawing.Size(29, 23);
+            this.btnOutputPathBrowser.TabIndex = 14;
+            this.btnOutputPathBrowser.Text = "...";
+            this.btnOutputPathBrowser.UseVisualStyleBackColor = true;
+            // 
+            // txtOutputPath
+            // 
+            this.txtOutputPath.Enabled = false;
+            this.txtOutputPath.Location = new System.Drawing.Point(118, 133);
+            this.txtOutputPath.Name = "txtOutputPath";
+            this.txtOutputPath.ReadOnly = true;
+            this.txtOutputPath.Size = new System.Drawing.Size(592, 20);
+            this.txtOutputPath.TabIndex = 13;
+            // 
+            // lbOutput
+            // 
+            this.lbOutput.AutoSize = true;
+            this.lbOutput.Location = new System.Drawing.Point(12, 136);
+            this.lbOutput.Name = "lbOutput";
+            this.lbOutput.Size = new System.Drawing.Size(85, 13);
+            this.lbOutput.TabIndex = 12;
+            this.lbOutput.Text = "Output directory:";
+            // 
+            // chbCustomOutput
+            // 
+            this.chbCustomOutput.AutoSize = true;
+            this.chbCustomOutput.Location = new System.Drawing.Point(15, 101);
+            this.chbCustomOutput.Name = "chbCustomOutput";
+            this.chbCustomOutput.Size = new System.Drawing.Size(137, 17);
+            this.chbCustomOutput.TabIndex = 15;
+            this.chbCustomOutput.Text = "Custom output directory";
+            this.chbCustomOutput.UseVisualStyleBackColor = true;
+            this.chbCustomOutput.CheckedChanged += new System.EventHandler(this.chbCustomOutput_CheckedChanged);
+            // 
+            // lbSourcesCount
+            // 
+            this.lbSourcesCount.AutoSize = true;
+            this.lbSourcesCount.Location = new System.Drawing.Point(297, 184);
+            this.lbSourcesCount.Name = "lbSourcesCount";
+            this.lbSourcesCount.Size = new System.Drawing.Size(13, 13);
+            this.lbSourcesCount.TabIndex = 16;
+            this.lbSourcesCount.Text = "0";
+            // 
             // ManForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(764, 453);
+            this.ClientSize = new System.Drawing.Size(758, 526);
+            this.Controls.Add(this.lbSourcesCount);
+            this.Controls.Add(this.chbCustomOutput);
+            this.Controls.Add(this.btnOutputPathBrowser);
+            this.Controls.Add(this.txtOutputPath);
+            this.Controls.Add(this.lbOutput);
+            this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.lbConvertingCount);
             this.Controls.Add(this.lbConvertingStatus);
             this.Controls.Add(this.progressBar1);
@@ -191,6 +260,12 @@
         private System.Windows.Forms.Label lbConvertingStatus;
         private System.Windows.Forms.Label lbConvertingCount;
         private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.Button btnConvert;
+        private System.Windows.Forms.Button btnOutputPathBrowser;
+        private System.Windows.Forms.TextBox txtOutputPath;
+        private System.Windows.Forms.Label lbOutput;
+        private System.Windows.Forms.CheckBox chbCustomOutput;
+        private System.Windows.Forms.Label lbSourcesCount;
     }
 }
 

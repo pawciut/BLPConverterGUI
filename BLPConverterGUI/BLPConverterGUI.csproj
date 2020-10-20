@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConversionResult.cs" />
     <Compile Include="ManForm.cs">
       <SubType>Form</SubType>
     </Compile>
