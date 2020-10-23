@@ -121,7 +121,7 @@ namespace BLPConverterGUI
             sourceToBeAddedCount = sourceFilesToBeAdded.Length;
             importInProgress = true;
 
-            lvSources.SuspendLayout();
+            lvSources.BeginUpdate();
 
             //add files
             for (int i = 0; i < sourceFilesToBeAdded.Count(); ++i)
@@ -136,8 +136,8 @@ namespace BLPConverterGUI
                 beforeAddingSourceDir = 0;
                 sourceToBeAddedCount = 0;
             });
-
-            lvSources.ResumeLayout();
+            
+            lvSources.EndUpdate();
             cancel = false;
             btnCancel.Enabled = false;
             importInProgress = false;
