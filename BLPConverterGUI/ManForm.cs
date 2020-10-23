@@ -28,6 +28,13 @@ namespace BLPConverterGUI
         int currentProgressCount = 0;
         Control control;
         List<string> errors = new List<string>();
+        List<string> sourceList = new List<string>();
+
+        int beforeAddingSourceDir = 0;
+        int sourceToBeAddedCount = 0;
+
+        bool importInProgress = false;
+        bool cancel = false;
 
         public ManForm()
         {
@@ -92,36 +99,54 @@ namespace BLPConverterGUI
                 AddSourceFiles(folderPath, true);
             }
         }
+        private void btnClearSources_Click(object sender, EventArgs e)
+        {
+            //lvSources.Items.Clear();
+            lvSources.VirtualListSize = 0;
+            sourceList.Clear();
+            lbSourcesCount.Text = lvSources.Items.Count.ToString();
+        }
+
 
         /// <summary>
         /// add all files from directory
         /// </summary>
         /// <param name="path">directory path</param>
         /// <param name="searchChildDirectories">add files from child directiorys</param>
-        void AddSourceFiles(string path, bool searchChildDirectories)
+        async void AddSourceFiles(string path, bool searchChildDirectories)
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(path);
-            var blpFiles = directoryInfo.EnumerateFiles("*.blp");
-            //add files from directory
-            for (int i = 0; i < blpFiles.Count(); ++i)
+            btnCancel.Enabled = true;
+            var sourceFilesToBeAdded = Directory.GetFiles(path, "*.blp", SearchOption.AllDirectories);
+            beforeAddingSourceDir = lvSources.Items.Count;
+            sourceToBeAddedCount = sourceFilesToBeAdded.Length;
+            importInProgress = true;
+
+            lvSources.SuspendLayout();
+
+            //add files
+            for (int i = 0; i < sourceFilesToBeAdded.Count(); ++i)
             {
-                AddSourceFile(blpFiles.ElementAt(i).FullName);
+                if (!cancel)
+                    await AddSourceFile(sourceFilesToBeAdded[i]);
             }
-            //add child directory files
-            var childDirectories = directoryInfo.EnumerateDirectories();
-            for (int i = 0; i < childDirectories.Count(); ++i)
+
+            control.BeginInvoke((MethodInvoker)delegate ()
             {
-                AddSourceFiles(childDirectories.ElementAt(i).FullName, searchChildDirectories);
-            }
+                lbSourcesCount.Text = lvSources.Items.Count.ToString();
+                beforeAddingSourceDir = 0;
+                sourceToBeAddedCount = 0;
+            });
+
+            lvSources.ResumeLayout();
+            cancel = false;
+            btnCancel.Enabled = false;
+            importInProgress = false;
         }
 
-        private void btnClearSources_Click(object sender, EventArgs e)
-        {
-            lvSources.Items.Clear();
-        }
 
-        private void btnSelectSourceFile_Click(object sender, EventArgs e)
+        private async void btnSelectSourceFile_Click(object sender, EventArgs e)
         {
+            btnCancel.Enabled = true;
             var fileContent = string.Empty;
             string[] filePaths;
 
@@ -135,10 +160,22 @@ namespace BLPConverterGUI
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
+                    importInProgress = true;
                     //Get the path of specified file
                     filePaths = openFileDialog.FileNames;
+
+                    beforeAddingSourceDir = lvSources.Items.Count;
+                    sourceToBeAddedCount = filePaths.Length;
+
                     foreach (var filePath in filePaths)
-                        AddSourceFile(filePath);
+                        await AddSourceFile(filePath);
+
+                    lbSourcesCount.Text = lvSources.Items.Count.ToString();
+                    beforeAddingSourceDir = 0;
+                    sourceToBeAddedCount = 0;
+                    cancel = false;
+                    btnCancel.Enabled = false;
+                    importInProgress = false;
                 }
             }
         }
@@ -147,15 +184,23 @@ namespace BLPConverterGUI
         /// add single source file
         /// </summary>
         /// <param name="filePath"></param>
-        void AddSourceFile(string filePath)
+        Task AddSourceFile(string filePath)
         {
-            var asList = lvSources.Items.Cast<ListViewItem>();
-            if (!asList.Any(lvi => lvi.Text.ToLower() == filePath.ToLower()))
+            return Task.Run(() =>
             {
-                var item = new ListViewItem(filePath);
-                lvSources.Items.Add(item);
-                lbSourcesCount.Text = lvSources.Items.Count.ToString();
-            }
+                if (cancel)
+                    return;
+
+                if (!sourceList.Any(source => source.ToLower() == filePath.ToLower()))
+                {
+                    sourceList.Add(filePath);
+                    control.BeginInvoke((MethodInvoker)delegate ()
+                    {
+                        lvSources.VirtualListSize++;
+                        lbSourcesCount.Text = $"{(lvSources.Items.Count - beforeAddingSourceDir)} / {sourceToBeAddedCount}";
+                    });
+                }
+            });
         }
 
         void ToggleCustomOutput(bool visible)
@@ -174,18 +219,18 @@ namespace BLPConverterGUI
         {
             if (IsSettingsValid())
             {
-                SetupProgess(lvSources.Items.Count);
+                SetupProgess(sourceList.Count);
                 ToggleProgressBar(true);
                 UpdateUI(false);
 
-                var sources = lvSources.Items.Cast<ListViewItem>().Select(lvi => lvi.Text).ToList();
+                var sources = sourceList;
                 List<string> outputs = new List<string>();
 
                 if (customOutputToggleVisible)
                 {
                     //Convert all to specified directory
                     UpdateProgress("Preparing output paths");
-                    foreach(var sourcePath in sources)
+                    foreach (var sourcePath in sources)
                     {
                         var outputFileName = Path.ChangeExtension(Path.GetFileName(sourcePath), "png");
                         var outputPath = Path.Combine(txtOutputPath.Text, outputFileName);
@@ -244,7 +289,7 @@ namespace BLPConverterGUI
             if (success)
             {
                 ++currentProgressCount;
-                lbConvertingCount.Text = $"{currentProgressCount}/{lvSources.Items.Count}";
+                lbConvertingCount.Text = $"{currentProgressCount}/{sourceList.Count}";
                 progressBar1.PerformStep();
             }
         }
@@ -271,7 +316,7 @@ namespace BLPConverterGUI
             ConversionResult result = new ConversionResult();
             result.sourcePath = filePath;
 
-            var arguments = String.IsNullOrEmpty(outputFilePath)? $"{filePath}" : $"\"{filePath}\" \"{outputFilePath}\"";
+            var arguments = String.IsNullOrEmpty(outputFilePath) ? $"{filePath}" : $"\"{filePath}\" \"{outputFilePath}\"";
 
             var proc = new Process
             {
@@ -311,7 +356,7 @@ namespace BLPConverterGUI
                 MessageBox.Show("BLPConverter path is invalid", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (lvSources.Items.Count <= 0)
+            if (sourceList.Count <= 0)
             {
                 MessageBox.Show("No source files to convert", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
@@ -347,6 +392,46 @@ namespace BLPConverterGUI
                 folderPath = outputFolderBrowserDialog.SelectedPath;
                 txtOutputPath.Text = folderPath;
             }
+        }
+
+        private void lvSources_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            //check to see if the requested item is currently in the cache
+            //if (myCache != null && e.ItemIndex >= firstItem && e.ItemIndex < firstItem + myCache.Length)
+            //{
+            //    //A cache hit, so get the ListViewItem from the cache instead of making a new one.
+            //    e.Item = myCache[e.ItemIndex - firstItem];
+            //}
+            //else
+            {
+                //A cache miss, so create a new ListViewItem and pass it back.
+                e.Item = new ListViewItem(sourceList[e.ItemIndex]);
+            }
+        }
+
+        private void lvSources_SearchForVirtualItem(object sender, SearchForVirtualItemEventArgs e)
+        {
+            //We've gotten a search request.
+            //In this example, finding the item is easy since it's
+            //just the square of its index.  We'll take the square root
+            //and round.
+            double x = 0;
+            if (Double.TryParse(e.Text, out x)) //check if this is a valid search
+            {
+                x = Math.Sqrt(x);
+                x = Math.Round(x);
+                e.Index = (int)x;
+            }
+            //If e.Index is not set, the search returns null.
+            //Note that this only handles simple searches over the entire
+            //list, ignoring any other settings.  Handling Direction, StartIndex,
+            //and the other properties of SearchForVirtualItemEventArgs is up
+            //to this handler.
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            cancel = true;
         }
     }
 }

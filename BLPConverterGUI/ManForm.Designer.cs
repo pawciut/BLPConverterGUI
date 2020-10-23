@@ -33,19 +33,20 @@
             this.btnBLTConverterPathBrowse = new System.Windows.Forms.Button();
             this.lbSource = new System.Windows.Forms.Label();
             this.lvSources = new System.Windows.Forms.ListView();
+            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnSelectSourceFolder = new System.Windows.Forms.Button();
             this.btnSelectSourceFile = new System.Windows.Forms.Button();
             this.btnClearSources = new System.Windows.Forms.Button();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.lbConvertingStatus = new System.Windows.Forms.Label();
             this.lbConvertingCount = new System.Windows.Forms.Label();
-            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnConvert = new System.Windows.Forms.Button();
             this.btnOutputPathBrowser = new System.Windows.Forms.Button();
             this.txtOutputPath = new System.Windows.Forms.TextBox();
             this.lbOutput = new System.Windows.Forms.Label();
             this.chbCustomOutput = new System.Windows.Forms.CheckBox();
             this.lbSourcesCount = new System.Windows.Forms.Label();
+            this.btnCancel = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lbBLPPath
@@ -99,6 +100,14 @@
             this.lvSources.TabIndex = 4;
             this.lvSources.UseCompatibleStateImageBehavior = false;
             this.lvSources.View = System.Windows.Forms.View.Details;
+            this.lvSources.VirtualMode = true;
+            this.lvSources.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvSources_RetrieveVirtualItem);
+            this.lvSources.SearchForVirtualItem += new System.Windows.Forms.SearchForVirtualItemEventHandler(this.lvSources_SearchForVirtualItem);
+            // 
+            // columnHeader1
+            // 
+            this.columnHeader1.Text = "File";
+            this.columnHeader1.Width = 400;
             // 
             // btnSelectSourceFolder
             // 
@@ -154,11 +163,6 @@
             this.lbConvertingCount.Size = new System.Drawing.Size(24, 13);
             this.lbConvertingCount.TabIndex = 10;
             this.lbConvertingCount.Text = "0/1";
-            // 
-            // columnHeader1
-            // 
-            this.columnHeader1.Text = "File";
-            this.columnHeader1.Width = 400;
             // 
             // btnConvert
             // 
@@ -218,11 +222,23 @@
             this.lbSourcesCount.TabIndex = 16;
             this.lbSourcesCount.Text = "0";
             // 
+            // btnCancel
+            // 
+            this.btnCancel.Enabled = false;
+            this.btnCancel.Location = new System.Drawing.Point(338, 179);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(62, 23);
+            this.btnCancel.TabIndex = 17;
+            this.btnCancel.Text = "Cancel";
+            this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            // 
             // ManForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(758, 526);
+            this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.lbSourcesCount);
             this.Controls.Add(this.chbCustomOutput);
             this.Controls.Add(this.btnOutputPathBrowser);
@@ -267,6 +283,7 @@
         private System.Windows.Forms.Label lbOutput;
         private System.Windows.Forms.CheckBox chbCustomOutput;
         private System.Windows.Forms.Label lbSourcesCount;
+        private System.Windows.Forms.Button btnCancel;
     }
 }
 
